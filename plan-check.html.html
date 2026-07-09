@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>교과별 평가계획 점검 시스템</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a1a;
+    --sub:#5b5b5b;
+    --line:#e4e4e4;
+    --bg:#ffffff;
+    --panel:#fafafa;
+    --teal:#2A9D99;
+    --teal-dark:#1f7d7a;
+    --teal-tint:#eaf6f5;
+    --red:#c0392b;
+    --red-tint:#fdecea;
+    --amber:#b8860b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans KR', -apple-system, "Malgun Gothic", sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.6;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:36px 24px 80px;}
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-start;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;margin-bottom:28px;
+  }
+  header.top h1{font-size:22px;font-weight:900;margin:0 0 4px;letter-spacing:-0.5px;}
+  header.top p{margin:0;color:var(--sub);font-size:13px;}
+  .badge{
+    font-size:12px;font-weight:700;color:var(--teal-dark);
+    background:var(--teal-tint);border:1px solid var(--teal);
+    padding:4px 10px;border-radius:20px;white-space:nowrap;
+  }
+
+  .setup-notice{
+    border:1px solid var(--amber);background:#fdf6e3;color:#6b5400;
+    border-radius:10px;padding:18px 20px;margin-bottom:24px;font-size:13px;
+  }
+  .setup-notice code{background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--line);}
+
+  .card{
+    border:1px solid var(--line);border-radius:12px;
+    padding:22px;margin-bottom:20px;background:var(--panel);
+  }
+  .card h2{font-size:15px;font-weight:700;margin:0 0 14px;}
+
+  .upload-zone{
+    border:2px dashed var(--line);border-radius:10px;
+    padding:28px;text-align:center;cursor:pointer;
+    transition:border-color .15s, background .15s;
+    background:#fff;position:relative;
+  }
+  .upload-zone.drag{border-color:var(--teal);background:var(--teal-tint);}
+  .upload-zone input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;}
+  .upload-icon{margin-bottom:8px;}
+  .upload-zone .title-line{font-weight:700;font-size:14px;}
+  .upload-zone .hint{color:var(--sub);font-size:13px;margin-top:6px;}
+  .upload-zone .filename{
+    font-weight:700;color:var(--teal-dark);margin-top:10px;font-size:14px;
+  }
+
+  button{
+    font-family:inherit;font-size:14px;font-weight:700;
+    border:none;border-radius:8px;padding:12px 22px;
+    cursor:pointer;transition:opacity .15s;
+  }
+  button.primary{background:var(--ink);color:#fff;}
+  button.primary:disabled{background:#c9c9c9;cursor:not-allowed;}
+  button.primary:not(:disabled):hover{opacity:.85;}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+  button.ghost:hover{border-color:var(--ink);}
+  .actions{margin-top:16px;display:flex;gap:10px;align-items:center;}
+
+  .progress-log{margin-top:18px;font-size:13px;color:var(--sub);}
+  .progress-log .line{display:flex;align-items:center;gap:8px;padding:5px 0;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--line);flex-shrink:0;}
+  .dot.done{background:var(--teal);}
+  .dot.active{background:var(--amber);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+  .summary-bar{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+  .stat{flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--panel);}
+  .stat .num{font-size:24px;font-weight:900;}
+  .stat .label{font-size:12px;color:var(--sub);margin-top:2px;}
+  .stat.issue .num{color:var(--red);}
+  .stat.ok .num{color:var(--teal-dark);}
+
+  .subject-card{border:1px solid var(--line);border-radius:12px;margin-bottom:14px;overflow:hidden;background:#fff;}
+  .subject-head{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;cursor:pointer;background:var(--panel);}
+  .subject-head:hover{background:#f2f2f2;}
+  .subject-head .name{font-size:15px;font-weight:700;}
+  .subject-head .meta{font-size:12px;color:var(--sub);display:flex;gap:10px;align-items:center;}
+  .subject-head .arrow{transition:transform .15s;color:var(--sub);display:inline-block;}
+  .subject-head .arrow.open{transform:rotate(90deg);}
+  .pill{font-size:11px;font-weight:700;padding:2px 9px;border-radius:12px;}
+  .pill.issue{background:var(--red-tint);color:var(--red);}
+  .pill.clean{background:var(--teal-tint);color:var(--teal-dark);}
+  .pill.concern{background:var(--amber-tint);color:var(--amber);}
+
+  .issue-row .loc{font-size:11.5px;color:var(--sub);margin-bottom:2px;}
+  .concern-row{border-top:1px solid var(--line);padding:14px 0;}
+  .concern-row .row-top{display:flex;gap:10px;align-items:baseline;margin-bottom:6px;}
+  .concern-row .num-tag{font-size:11px;font-weight:700;color:#fff;background:var(--amber);padding:1px 7px;border-radius:5px;flex-shrink:0;}
+  .concern-row .area{font-weight:700;font-size:13.5px;}
+  .concern-row .loc{font-size:11.5px;color:var(--sub);margin-bottom:2px;}
+  .concern-row .found{font-size:13px;color:var(--ink);margin:4px 0 8px;background:var(--amber-tint);border-left:3px solid var(--amber);padding:8px 12px;border-radius:0 6px 6px 0;}
+  .concern-row .advice{font-size:13px;color:var(--ink);background:#f2f2f2;border-left:3px solid var(--sub);padding:8px 12px;border-radius:0 6px 6px 0;}
+  .section-label{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 2px;}
+
+  .subject-body{padding:0 18px 18px;display:none;}
+  .subject-body.open{display:block;}
+
+  .issue-row{border-top:1px solid var(--line);padding:14px 0;}
+  .issue-row .row-top{display:flex;gap:10px;align-items:baseline;margin-bottom:6px;}
+  .issue-row .num-tag{font-size:11px;font-weight:700;color:#fff;background:var(--ink);padding:1px 7px;border-radius:5px;flex-shrink:0;}
+  .issue-row .area{font-weight:700;font-size:13.5px;}
+  .issue-row .found{font-size:13px;color:var(--ink);margin:4px 0 8px;background:var(--red-tint);border-left:3px solid var(--red);padding:8px 12px;border-radius:0 6px 6px 0;}
+  .issue-row .advice{font-size:13px;color:var(--ink);background:var(--teal-tint);border-left:3px solid var(--teal);padding:8px 12px;border-radius:0 6px 6px 0;}
+  .issue-row .advice b{color:var(--teal-dark);}
+
+  .clean-msg{padding:16px 0;color:var(--teal-dark);font-size:13.5px;font-weight:500;}
+
+  .error-box{background:var(--red-tint);border:1px solid var(--red);color:var(--red);padding:12px 16px;border-radius:8px;font-size:13px;margin-top:14px;white-space:pre-wrap;}
+
+  footer.note{margin-top:36px;font-size:12px;color:var(--sub);border-top:1px solid var(--line);padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>교과별 평가계획 점검 시스템</h1>
+      <p>충남 학업성적관리 시행지침 &amp; 2026 학생평가 점검 길잡이 기준 자동 점검 · v2</p>
+    </div>
+    <span class="badge">v2</span>
+  </header>
+
+  <div id="setupNoticeArea"></div>
+
+  <div class="card" id="uploadCard">
+    <h2>1. 교과별 평가계획서 업로드</h2>
+    <label class="upload-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="application/pdf">
+      <div class="upload-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2A9D99" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="12" y1="18" x2="12" y2="12"></line>
+          <polyline points="9 15 12 12 15 15"></polyline>
+        </svg>
+      </div>
+      <div class="title-line">클릭하거나 PDF 파일을 이곳에 끌어다 놓으세요</div>
+      <div class="hint">교과별 평가계획서 (여러 과목이 포함된 PDF) 1개</div>
+      <div class="filename" id="fileName"></div>
+    </label>
+    <div class="actions">
+      <button class="primary" id="startBtn" disabled>점검 시작</button>
+      <button class="ghost" id="resetBtn" style="display:none;">다시 하기</button>
+    </div>
+    <div class="progress-log" id="progressLog"></div>
+    <div id="errorBox"></div>
+  </div>
+
+  <div id="summaryArea"></div>
+  <div id="resultsArea"></div>
+
+  <footer class="note">
+    ※ 이 도구는 Google Gemini가 업로드된 PDF 내용을 직접 읽고 판단합니다. 최종 판단과 학업성적관리위원회 심의 절차는 반드시 담당자가 직접 확인해주세요.
+  </footer>
+
+</div>
+
+<script>
+/* ─────────────────────────────────────────
+   배포 시 아래 GAS_URL 값을 본인의
+   Google Apps Script 웹 앱 배포 URL로 교체하세요.
+   (예: https://script.google.com/macros/s/AKfycb.../exec)
+───────────────────────────────────────── */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxXbNNp5dDXzBxg3_ARNJHZgwsd6eBZv8WWMg2ohdWXDwU3yYMhOLNPTmLbuf0TIaR9/exec";
+
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const fileNameEl = document.getElementById('fileName');
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
+const progressLog = document.getElementById('progressLog');
+const errorBox = document.getElementById('errorBox');
+const summaryArea = document.getElementById('summaryArea');
+const resultsArea = document.getElementById('resultsArea');
+const setupNoticeArea = document.getElementById('setupNoticeArea');
+const uploadCard = document.getElementById('uploadCard');
+
+const GAS_CONFIGURED = GAS_URL && GAS_URL.indexOf('PASTE_YOUR') === -1;
+
+if (!GAS_CONFIGURED) {
+  setupNoticeArea.innerHTML = `
+    <div class="setup-notice">
+      <b>⚠ 설정이 필요합니다.</b> 이 파일 하단의 <code>GAS_URL</code> 값에
+      배포한 Google Apps Script 웹 앱 URL을 붙여넣어야 점검이 실행됩니다.
+      (Code.gs를 Apps Script에 배포한 후 나오는 <code>.../exec</code> URL)
+    </div>
+  `;
+  startBtn.disabled = true;
+  dropZone.style.opacity = '.5';
+  dropZone.style.pointerEvents = 'none';
+}
+
+let pdfBase64 = null;
+
+// ---------- 파일 업로드 처리 ----------
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+['dragover','dragenter'].forEach(evt=>{
+  dropZone.addEventListener(evt, (e)=>{e.preventDefault(); dropZone.classList.add('drag');});
+});
+['dragleave','drop'].forEach(evt=>{
+  dropZone.addEventListener(evt, (e)=>{e.preventDefault(); dropZone.classList.remove('drag');});
+});
+dropZone.addEventListener('drop', (e)=>{
+  e.preventDefault();
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+
+function handleFile(file){
+  if (file.type !== 'application/pdf'){
+    showError('PDF 파일만 업로드할 수 있습니다.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    pdfBase64 = reader.result.split(',')[1];
+    fileNameEl.textContent = '선택됨: ' + file.name;
+    if (GAS_CONFIGURED) startBtn.disabled = false;
+    clearError();
+  };
+  reader.onerror = () => showError('파일을 읽는 중 오류가 발생했습니다.');
+  reader.readAsDataURL(file);
+}
+
+function showError(msg){ errorBox.innerHTML = `<div class="error-box">${escapeHtml(msg)}</div>`; }
+function clearError(){ errorBox.innerHTML = ''; }
+
+function logLine(text, status){
+  const div = document.createElement('div');
+  div.className = 'line';
+  div.innerHTML = `<span class="dot ${status}"></span><span></span>`;
+  div.querySelector('span:last-child').textContent = text;
+  progressLog.appendChild(div);
+  return div;
+}
+function setLineDone(div, text){
+  div.querySelector('.dot').className = 'dot done';
+  if(text) div.querySelector('span:last-child').textContent = text;
+}
+
+// ---------- 점검 기준 (양식2 + 점검 길잡이 요약) ----------
+const CHECKLIST_KNOWLEDGE = `
+[교과별 평가계획 점검 기준 - 충남 학업성적관리 시행지침 및 2026 학생평가 점검 길잡이 양식2 기반]
+
+■ 평가계획 전반
+1. 학년별 적용 교육과정에 따른 용어를 알맞게 사용 (1·2학년: 학점·성취수준 / 3학년: 단위·평가기준). 2015/2022 개정 교육과정 용어를 혼용하지 않았는지 확인.
+2. 학년·교과목별 성적처리방식을 현행 교육과정과 훈령에 따라 적용 (과목명, 교육과정 편제, 성취도, 등급산출 여부/성적처리 유형을 정확히 기재했는지). 특히 2022 개정 교육과정 공통과목 성취도 E단계 범위(40~60%미만, 최소성취수준 보장지도 이수시 E부여)와 선택과목 E단계 범위(60%미만)를 학년/과목 구분에 맞게 표기했는지 확인.
+3. 단위 학교 교육과정 편제표에 근거하여 개설된 모든 과목의 평가계획이 수립되었는지 (공동교육과정/학교연합·지역연계·온라인학교 포함, 교양교과 등 누락 없이).
+4. 학업성적관리 시행지침 제8조제2항 내용 포함 여부: (1)평가 목적·방향·방침·유의사항 (2)평가 종류·방법·시기 (3)정기시험과 수행평가의 시기·영역·요소·방법·횟수·세부기준(영역별 배점과 채점기준)·반영비율, 결시자와 학적변동자 처리기준(인정점 포함) (4)기준 성취율·분할점수 산출방식·성취도·성적처리유형 (5)성적처리 방법 및 결과의 활용.
+5. [고] 1·2학년 공통과목, 3학년 공통과목 국어·수학·영어 및 전문교과Ⅱ 실무과목의 과목별 최소 성취수준(학업성취율 40% 기준, 최소 성취수준 진술문)을 설정했는지.
+6. 교차채점 계획과 [고] 동점자(동석차) 성적처리규정 포함 여부 - 서답형 문항 출제 교과는 교차채점 계획 필수, 등급을 산출하는 교과는 동점자 처리규정 필수(2022개정 전문교과는 1방안까지만 설정 가능).
++ 평가계획 내용과 학교 학업성적관리규정의 일치 여부: 예) 규정상 등급자 처리기준 순위(2회고사→1회고사→수행평가)와 평가계획의 순위 표기가 다른 경우, 규정상 "부정행위시 0점"인데 평가계획에는 다른 점수(예: 20점) 부여로 명시한 경우 등 규정과 상충되는 부분이 없는지.
+
+■ 정기시험·수행평가 계획 설계
+9. 정기시험 실시 교과(군)의 경우 서답형 평가를 정기시험 배점의 30% 이상으로 계획했는지(학업성적관리위원회 심의로 결정된 수행평가 비중 60%이상 교과 제외). 국어·수학·영어·한국사·사회(역사/도덕 포함)·과학 교과(군)은 서·논술형 평가가 정기시험 배점의 20% 이상인지.
+10. 정기시험 및 수행평가 영역의 서·논술형 평가 환산 비율이 한 학기 환산점 100점(과목만점) 중 20% 이상인지.
+11. [특] 1·2학년 전문교과 전공실무과목(3학년 전문교과Ⅱ 실무과목)의 능력단위별 반영비율 합계가 100%인지.
+12. 수행평가를 최소 2개 영역 이상 계획했는지. 각 수행평가 시기가 적절히 분산되어 있고 각 영역이 서로 다른 성취기준을 다루는지.
+13. 수행평가 영역명을 평가 내용 및 평가 방법이 표현되도록 구체적으로 작성했는지 (예: '실험'이 아니라 '혈액형 판정 실험' 처럼 구체적으로).
+
+■ 수행평가 과제별 세부 계획
+14. 수행평가 영역별로 성취기준과 성취수준(평가기준)을 명시하고, 성취기준·교육과정 내용에 근거한 평가요소가 제시되었는지.
+15. 평가 종류·반영비율표의 평가 시기 및 반영비율이 수행평가 과제별 세부 계획의 내용과 일치하는지.
+16. 성취기준을 분석하여 평가요소를 선정하고 이를 고려하여 평가 방법을 선정했는지.
+17. 암기식 수행평가 및 과제형 수행평가(수업시간 외 가정 등에서 이루어지는 것) 금지, 일제고사 형태의 평가 지양했는지.
+18. 수행평가의 기본점수 부여 시 영역 만점의 40% 이하로 설정했는지.
+19. 적절한 서·논술형 평가 방식을 활용하고 있는지 - 발표, 구술, 실험 준비, 그림 그리기 등은 서·논술형 평가로 인정되지 않음.
+20. 수행평가 채점 기준표에서 항목(채점요소)별 배점의 급간을 균등하게 설정했는지.
+21. 채점 기준(기대 수행)이 중복되지 않았는지 (예: 잘못된 예 "3가지 이상 충족 15점 / 1가지 이상 충족 10점"(범위중복) → 올바른 예 "3~4가지 충족 15점 / 1~2가지 충족 10점").
+22. 지적 횟수, 제출 기한, 포트폴리오 작성 분량, 성취율(%), 성실성을 채점 기준으로 삼지 않았는지(제출여부·성실성만으로 급간이 결정되는 평가 지양).
+23. 채점 기준(기대 수행)의 객관성 확보 여부 - '지적 개수당 1점 감점', '정성을 다해/성의 없이', '적절하게/부적절하게' 등 모호한 표현을 사용하지 않았는지.
+24. 모둠활동 등 복수 학생 공동수행 평가 시 개별학생에게 역할을 부여하고 개인별 학습과제에 대한 수행 과정과 결과를 평가하도록 계획했는지 (무임승차 방지).
+25. 수행평가 부정행위 유형 및 부정행위자 처리 기준을 명시했는지 (교과별 평가계획 또는 학업성적관리규정에 명시 필요).
+26. AI를 활용하는 경우 AI 활용 관리 방안(허용 범위, 허용 도구, 표기 방법, 사전 안내, 검증 방법 등)을 포함했는지. AI 활용을 허용하지 않는 경우 금지 행위 및 부정행위 처리 기준을 명시했는지.
+
+■ 기타 (인정점 부여, 동점자 처리 기준 등)
+27. 추정분할점수 사용 교과: 수행평가 추정분할점수를 평가계획에 포함했는지.
+28. 장기 미인정 결석자, 고의적 미제출자, 백지답안 제출자의 점수는 기본점수보다 낮게 설정되었는지 (기본점수와 동일하게 설정되어 있으면 안됨).
+29. 수행평가만으로 평가하는 교과: 신체장애학생(신체장애에 준하는 부상 학생)에 대한 인정점 산출 방법을 평가계획에 명시했는지.
+30. 정기시험을 실시하는 교과: 동점자 처리 기준, 교차채점 계획을 반드시 작성했는지.
+31. 앞부분의 수행평가 영역명과 동점자 처리 기준표의 영역명이 동일하게 기재되었는지 (예: 잘못된 예 - 수행평가 세부계획의 영역명엔 '효소의 작용 실험' / 동점자 기준표엔 '효소 실험' 또는 '과학 실험1' 로 불일치).
+32. 1·2학년: 학기 단위 성취수준을 설정하고, 성취기준별 성취수준을 명시했는지.
+33. 과목별 최소 성취수준을 설정했는지 - 대상: 1·2학년 공통국어/공통수학/기본수학/공통영어/기본영어/한국사/통합사회/통합과학/과학탐구실험, 3학년 공통과목 국어·수학·영어 및 전문교과Ⅱ 실무과목.
+34. [우려사항 전용 - 확정적 위반이 아닌 검토 필요 사항으로 분류] 수행평가 결시자에 대한 "추가(재) 응시 기회"를 "1회만" 등으로 명시적으로 제한하고 있는지 확인. 충남 학업성적관리 시행지침 제14조②는 "교과목별 수행평가에 참여하지 못한 학생은 추후에 평가 기회를 다시 부여하여 평가하되, 장기결석 등으로 참여하지 못한 학생의 성적처리는 기본점수를 부여하지 않고, 교과별 평가계획에 제시된 인정점 부여기준에 따라 처리한다"고 규정하고 있어, 재응시 기회를 사전에 "1회"로 못박아 그 이후에는 기계적으로 인정점(기본점수 미만)만 부여하도록 한 문구는 지침의 "추후 기회를 다시 부여" 원칙과 잠재적으로 상충될 소지가 있음. 다만 이는 학교 운영상 불가피한 현실적 제약(무한정 기회 부여 불가)과 병존할 수 있는 사안이므로, 이슈(확정 위반)가 아니라 "우려사항"으로 분류하여 검토를 권고하는 수준으로 안내할 것.
+
+※ 참고: 수행평가는 학생의 학습과제 수행 과정과 결과를 평가하며, 수업 중 실시 원칙이고 가정 등에서 이루어지는 과제형 수행평가는 금지된다(단, 영어듣기평가는 예외). 신체장애 학생의 경우 정기시험 실시시 인정점 계산식은 [수행평가 해당영역 기본점수 + (수행평가 해당영역 배점(기본점수 제외) × 해당학생 정기시험 득점/정기시험 배점총점)] 이다.
+
+■ 교육과정 연도별 과목 분류표 (항목 1·2 점검 시 이 표로 과목명을 대조하여 올바른 교육과정 구분·용어·성취도단계·등급산출 여부를 판정할 것)
+
+[2022 개정 교육과정 - 1·2학년 대상 / 용어: "학점"·"성취수준" / 원칙적으로 5단계 성취도, 5등급 석차등급]
+- 공통과목(5단계 성취도, 5등급): 공통국어1·2, 공통수학1·2, 기본수학1·2, 공통영어1·2, 기본영어1·2, 한국사1·2, 통합사회1·2, 통합과학1·2
+- 공통과목(3단계 성취도, 석차등급 미산출): 과학탐구실험1·2
+- 일반선택: (국어)화법과언어·독서와작문·문학 (수학)대수·미적분Ⅰ·확률과통계 (영어)영어Ⅰ·영어Ⅱ (사회)세계시민과지리·세계사·사회와문화·현대사회와윤리 (과학)물리학·화학·생명과학·지구과학 (체육)체육1·체육2(3단계,석차등급없음) (예술)음악·미술·연극(3단계,석차등급없음) (기술가정)기술가정 (한문)한문
+- 진로선택: (국어)주제탐구독서·문학과영상·직무의사소통 (수학)기하·미적분Ⅱ·경제수학·인공지능수학·직무수학 (영어)영미문학읽기·영어발표와토론·심화영어·심화영어독해와작문·직무영어 (사회)한국지리탐구·도시의미래탐구·동아시아역사기행·정치법과사회·경제·윤리와사상·국제관계의이해 (과학)역학과에너지·물질과에너지·세포와물질대사·지구시스템과학·전자기와양자·화학반응의세계·생물의유전·행성우주과학 (체육)스포츠생활·체육탐구 (예술)음악연주와창작·음악감상과비평·미술창작·미술감상과비평 * 진로선택은 석차등급 미산출, 성취도별 분포비율 산출
+- 융합선택: (국어)독서토론과글쓰기·매체의사소통·언어생활탐구 (수학)수학과문화·실용통계·수학과제탐구 (영어)실생활영어회화·미디어영어·세계문화와영어 (사회·과학 융합선택은 석차등급 '·'표기)여행지리·역사로탐구하는현대세계·사회문제탐구·금융과경제생활·윤리문제탐구·기후변화와지속가능한세계·과학의역사와문화·기후변화와환경생태·융합과학탐구 (체육)스포츠교육·스포츠생리의학·스포츠행정및경영 (예술)음악과문화·미술과매체
+- 교양교과: 진로와직업·논리학·심리학·교육학·종교학·생태와환경 등 - '이수여부(P)' 입력, 성취도 아님
+- 전문교과(전문공통/전공일반/전공실무): NCS 능력단위 기반
+
+[2015 개정 교육과정 - 3학년 대상 / 용어: "단위"·"평가기준"]
+- 공통과목(5단계, 석차등급): 국어, 수학, 영어, 한국사, 통합사회, 통합과학
+- 공통과목(3단계, 석차등급 미산출): 과학탐구실험
+- 일반선택(5단계, 석차등급): (국어)화법과작문·독서·언어와매체·문학 (수학)수학Ⅰ·수학Ⅱ·미적분·확률과통계 (영어)영어회화·영어Ⅰ·영어독해와작문·영어Ⅱ (사회)한국지리·세계지리·세계사·동아시아사·경제·정치와법·사회문화·생활과윤리·윤리와사상 (과학)물리학Ⅰ·화학Ⅰ·생명과학Ⅰ·지구과학Ⅰ (기술가정)기술가정·정보 (체육 일반선택-체육,운동과건강은 3단계, 석차등급 없음) (예술-음악,미술,연극은 3단계, 석차등급 없음)
+- 진로선택(3단계 또는 5단계, 성취도별분포비율만 산출·석차등급 없음): (국어)실용국어·심화국어·고전읽기 (수학)기본수학·실용수학·인공지능수학·기하·경제수학·수학과제탐구 (영어)기본영어·실용영어·영어권문화·진로영어·영미문학읽기 (사회)여행지리·사회문제탐구·고전과윤리 (과학)물리학Ⅱ·화학Ⅱ·생명과학Ⅱ·지구과학Ⅱ·과학사·생활과과학·융합과학 (체육)스포츠생활·체육탐구 (예술)음악연주·음악감상과비평 (기술가정)농업생명과학·공학일반·창의경영·해양문화와기술·가정과학·자원산업일반·인공지능기초
+- 전문교과Ⅰ (석차등급 미산출, 3학년 특목고/과학중점 등에서 개설, 5단계 또는 3단계): 
+  (과학계열)심화수학Ⅰ·Ⅱ, 고급수학Ⅰ·Ⅱ, 고급물리학, 고급화학, 고급생명과학, 고급지구과학, 물리학실험, 화학실험, 생명과학실험, 지구과학실험, 융합과학탐구, 과학과제연구, 생태와환경, 정보과학(이 중 물리학실험·화학실험·생명과학실험·지구과학실험·융합과학탐구·과학과제연구는 3단계 성취도)
+  (예술계열)음악이론, 음악사, 시창·청음, 음악전공실기, 합창, 합주, 공연실습, 미술이론, 미술사, 드로잉, 평면조형, 입체조형, 매체미술, 미술전공실기, 문예창작입문, 문학개론, 문장론, 문학과매체, 고전문학감상, 현대문학감상, 시창작, 소설창작, 극창작, 연극의이해, 연기, 연극제작실습, 연극감상과비평, 영화의이해, 시나리오, 영화제작실습, 영화감상과비평, 사진의이해, 기초촬영, 사진표현기법, 영상제작의이해, 사진영상편집, 사진감상과비평
+  (체육계열)스포츠개론, 체육과진로탐구, 체육지도법, 육상운동, 체조운동, 수상운동, 개인·대인운동, 단체운동, 체육전공실기(기초/심화/응용), 스포츠경기체력, 스포츠경기실습, 스포츠경기분석
+  (외국어계열)심화영어회화Ⅰ·Ⅱ, 심화영어Ⅰ·Ⅱ, 심화영어독해Ⅰ·Ⅱ, 심화영어작문Ⅰ·Ⅱ, 전공기초외국어, 외국어회화Ⅰ·Ⅱ, 외국어독해와작문Ⅰ·Ⅱ, 외국어권문화
+  (국제계열)국제정치, 국제경제, 국제법, 지역이해, 한국사회의이해, 세계문제와미래사회, 국제관계와국제기구, 현대세계의변화, 사회탐구방법, 사회과제연구
+- 전문교과Ⅱ (특성화고·산업수요맞춤형고 NCS 실무과목, 석차등급 산출 안함, 능력단위 기반): 예) 기업과경영, 인간발달, 아동생활지도, 공중보건, 보건간호, 디자인일반, 컴퓨터그래픽, 음악콘텐츠제작, 문화콘텐츠산업일반, 영상제작기초, 제품디자인, 관광일본어, 관광중국어, 식품과영양, 건축일반, 기계일반, 디지털논리회로, 전기전자기초, 정보처리와관리, 정보통신, 컴퓨터구조, 컴퓨터시스템일반, 자료구조, 프로그래밍, 응용프로그래밍, 컴퓨터네트워크, 식품과학, 공예일반 등
+
+▶ 판정 지침: 과목명이 위 2022 개정 목록에 있는데 문서에 "단위"·"9등급"·"3단계"(공통과목인데) 등 2015식 표현이 쓰였거나, 반대로 3학년 대상 2015 개정 과목인데 "학점"·"5등급"(선택과목인데) 등 2022식 표현이 쓰였다면 이는 명백한 이슈(항목1·2 위반)로 보고할 것. 표에 없는 생소한 과목명이면 절대 임의로 단정하지 말고, 판단이 어렵다는 점을 발견내용에 명시할 것.
+`;
+
+const CHECK_SYSTEM_PROMPT = `당신은 충남교육청 학업성적관리 시행지침 및 2026 학생평가 점검 길잡이에 따라 고등학교 교과별 평가계획서를 점검하는 전문 컨설턴트입니다.
+
+아래는 점검 기준입니다:
+${CHECKLIST_KNOWLEDGE}
+
+지시사항:
+- 업로드된 PDF 안에는 여러 과목의 평가계획이 들어있을 수 있습니다. 문서 안에 포함된 "모든 과목"을 빠짐없이 찾아서, 과목별로 각각 위 점검 기준에 따라 점검하세요.
+- 문제가 없는(충족된) 항목은 개수만 세고 상세 내용은 출력하지 마세요.
+- 명백히 지침/양식2 기준에 어긋나는 것은 "이슈" 배열에, 확정적 위반은 아니지만 검토가 필요해 보이는 사항(예: 항목 34 결시자 재기회 제한)은 반드시 "우려사항" 배열에 별도로 분류하세요. 두 배열을 절대 섞지 마세요.
+- "위치"는 페이지 번호가 아니라, 평가계획서 문서 자체에 쓰여 있는 목차/항목 번호와 소제목을 그대로 사용해서 표시하세요. 예: "5. 수행평가 과제별 세부 계획의 가. 수학 독서 나눔", "8. 동점자 처리 기준". 문서에 명확한 목차 번호가 없으면 가장 가까운 소제목이나 섹션명을 사용하세요.
+- 발견내용은 실제 평가계획서의 어떤 부분이 문제인지 구체적으로 서술하세요.
+- 컨설팅방향(또는 우려사항의 설명)은 점검 길잡이의 잘못된 사례/컨설팅 방향 문구 스타일을 참고하여, 어떻게 수정하거나 검토하면 좋을지 명확한 지침 형태로 작성하세요.
+- 항목 1·2(교육과정 구분) 점검 시에는 반드시 위 "교육과정 연도별 과목 분류표"로 과목명을 대조해서 판정하세요. 표에 없는 과목이면 단정하지 말고 그 사실을 발견내용에 명시하세요.
+- 반드시 아래 JSON 형식(과목별 결과를 담은 배열)으로만 응답하고 다른 설명은 절대 포함하지 마세요:
+{"과목별결과":[
+  {"과목명":"...", "총점검항목":34, "충족항목수":28,
+   "이슈":[{"번호":"9","위치":"4. 평가의 종류와 반영 비율","영역":"서답형 평가 비율","발견내용":"...","컨설팅방향":"..."}],
+   "우려사항":[{"번호":"34","위치":"5. 수행평가 과제별 세부 계획의 나. 이차함수 최대·최소 판별","영역":"결시자 재응시 기회 제한","발견내용":"...","설명":"..."}]
+  }
+]}
+- 이슈나 우려사항이 전혀 없는 과목은 각각 빈 배열 []로 반환하세요. 과목이 1개뿐이어도 반드시 "과목별결과" 배열 안에 담아 반환하세요.`;
+
+// ---------- GAS 백엔드 호출 ----------
+async function callBackend(){
+  // text/plain 으로 보내야 브라우저의 CORS preflight(OPTIONS)를 피할 수 있음
+  const response = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ pdfBase64: pdfBase64, systemPrompt: CHECK_SYSTEM_PROMPT })
+  });
+  if(!response.ok){
+    throw new Error(`서버 응답 오류 (HTTP ${response.status})`);
+  }
+  const data = await response.json();
+  if(!data.ok){
+    throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
+  }
+  return data.raw;
+}
+
+function parseJsonLoose(text){
+  let clean = text.replace(/```json/g,'').replace(/```/g,'').trim();
+  const firstBrace = Math.min(
+    ...['{','['].map(ch=>{const i=clean.indexOf(ch); return i===-1?Infinity:i;})
+  );
+  const lastBrace = Math.max(
+    ...['}',']'].map(ch=>{const i=clean.lastIndexOf(ch); return i===-1?-1:i;})
+  );
+  if(firstBrace !== Infinity && lastBrace !== -1){
+    clean = clean.slice(firstBrace, lastBrace+1);
+  }
+  return JSON.parse(clean);
+}
+
+// ---------- 메인 플로우 ----------
+startBtn.addEventListener('click', runCheck);
+resetBtn.addEventListener('click', ()=>location.reload());
+
+async function runCheck(){
+  startBtn.disabled = true;
+  progressLog.innerHTML = '';
+  summaryArea.innerHTML = '';
+  resultsArea.innerHTML = '';
+  clearError();
+
+  try{
+    const l1 = logLine('PDF 전체를 분석하는 중... (과목 수에 따라 1~2분 정도 걸릴 수 있어요)', 'active');
+    const raw = await callBackend();
+    let parsed;
+    try{
+      parsed = parseJsonLoose(raw);
+    }catch(e){
+      throw new Error('점검 결과를 인식하지 못했습니다. 다시 시도해보시거나 PDF 용량을 확인해주세요.');
+    }
+    const subjectResults = parsed.과목별결과 || (Array.isArray(parsed) ? parsed : null);
+    if(!subjectResults || subjectResults.length === 0){
+      throw new Error('과목별 결과를 찾지 못했습니다.');
+    }
+    setLineDone(l1, `분석 완료 - 총 ${subjectResults.length}개 과목`);
+
+    let totalIssues = 0;
+    subjectResults.forEach(r => totalIssues += (r.이슈||[]).length);
+    renderSummary(subjectResults.length, subjectResults.length, totalIssues);
+
+    subjectResults.forEach(result => renderSubjectCard(result, result.과목명));
+
+  }catch(e){
+    showError(e.message);
+  }finally{
+    resetBtn.style.display = 'inline-block';
+  }
+}
+
+function renderSummary(totalSubjects, checkedSubjects, totalIssues){
+  summaryArea.innerHTML = `
+    <div class="summary-bar">
+      <div class="stat"><div class="num">${totalSubjects}</div><div class="label">전체 과목 수</div></div>
+      <div class="stat ok"><div class="num">${checkedSubjects}</div><div class="label">점검 완료 과목</div></div>
+      <div class="stat issue"><div class="num">${totalIssues}</div><div class="label">발견된 이슈 총계</div></div>
+    </div>
+  `;
+}
+
+function renderSubjectCard(result, fallbackName){
+  const subj = result.과목명 || fallbackName;
+  const total = result.총점검항목 ?? '-';
+  const okCount = result.충족항목수 ?? '-';
+  const issues = result.이슈 || [];
+  const concerns = result.우려사항 || [];
+  const hasIssue = issues.length > 0;
+  const hasConcern = concerns.length > 0;
+  const hasAnything = hasIssue || hasConcern;
+
+  let bodyContent = '';
+  if(hasIssue){
+    bodyContent += `<div class="section-label">이슈 (${issues.length}건)</div>` + issues.map(issueHtml).join('');
+  }
+  if(hasConcern){
+    bodyContent += `<div class="section-label">우려사항 · 검토 권고 (${concerns.length}건)</div>` + concerns.map(concernHtml).join('');
+  }
+  if(!hasAnything){
+    bodyContent = '<div class="clean-msg">✓ 점검 기준상 특이사항이 발견되지 않았습니다.</div>';
+  }
+
+  const badges = [];
+  if(hasIssue) badges.push(`<span class="pill issue">${issues.length}건 이슈</span>`);
+  if(hasConcern) badges.push(`<span class="pill concern">${concerns.length}건 우려</span>`);
+  if(!hasAnything) badges.push(`<span class="pill clean">이상 없음</span>`);
+
+  const card = document.createElement('div');
+  card.className = 'subject-card';
+  card.innerHTML = `
+    <div class="subject-head">
+      <span class="name">${escapeHtml(subj)}</span>
+      <span class="meta">
+        <span>충족 ${okCount}/${total}</span>
+        ${badges.join('')}
+        <span class="arrow">▶</span>
+      </span>
+    </div>
+    <div class="subject-body">
+      ${bodyContent}
+    </div>
+  `;
+  const head = card.querySelector('.subject-head');
+  const body = card.querySelector('.subject-body');
+  const arrow = card.querySelector('.arrow');
+  head.addEventListener('click', ()=>{
+    body.classList.toggle('open');
+    arrow.classList.toggle('open');
+  });
+  // 이슈/우려사항이 있는 과목은 기본적으로 펼쳐서 보여줌
+  if(hasAnything){
+    body.classList.add('open');
+    arrow.classList.add('open');
+  }
+  resultsArea.appendChild(card);
+}
+
+function issueHtml(issue){
+  return `
+    <div class="issue-row">
+      <div class="row-top">
+        <span class="num-tag">#${escapeHtml(issue.번호||'-')}</span>
+        <span class="area">${escapeHtml(issue.영역||'')}</span>
+      </div>
+      ${issue.위치 ? `<div class="loc">위치: ${escapeHtml(issue.위치)}</div>` : ''}
+      <div class="found"><b>발견 내용</b> · ${escapeHtml(issue.발견내용||'')}</div>
+      <div class="advice"><b>컨설팅 방향</b> · ${escapeHtml(issue.컨설팅방향||'')}</div>
+    </div>
+  `;
+}
+
+function concernHtml(item){
+  return `
+    <div class="concern-row">
+      <div class="row-top">
+        <span class="num-tag">#${escapeHtml(item.번호||'-')}</span>
+        <span class="area">${escapeHtml(item.영역||'')}</span>
+      </div>
+      ${item.위치 ? `<div class="loc">위치: ${escapeHtml(item.위치)}</div>` : ''}
+      <div class="found"><b>발견 내용</b> · ${escapeHtml(item.발견내용||'')}</div>
+      <div class="advice"><b>검토 권고</b> · ${escapeHtml(item.설명||'')}</div>
+    </div>
+  `;
+}
+
+function renderSubjectError(subj, msg){
+  const card = document.createElement('div');
+  card.className = 'subject-card';
+  card.innerHTML = `
+    <div class="subject-head"><span class="name">${escapeHtml(subj)}</span><span class="pill issue">오류</span></div>
+    <div class="subject-body open"><div class="error-box">점검 중 오류가 발생했습니다: ${escapeHtml(msg)}</div></div>
+  `;
+  resultsArea.appendChild(card);
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, s => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[s]));
+}
+</script>
+</body>
+</html>
